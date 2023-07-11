@@ -1,0 +1,10 @@
+version: '2.0'
+services:
+  server:
+    image: liu578101804/go-friends-link:v1
+    container_name: "go-friends-link"
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+    ports:
+      - 80:80
