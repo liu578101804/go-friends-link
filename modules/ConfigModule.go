@@ -2,7 +2,7 @@ package modules
 
 type LinkItem struct {
 	Url    string `json:"url"`
-	Kind   string `json:"kind"`
+	Kind   string `json:"kind"` // rss || atom
 	Title  string `json:"title"`
 	Author string `json:"author"`
 	Avatar string `json:"avatar"`

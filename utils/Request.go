@@ -20,6 +20,6 @@ func GetBody(url string) ([]byte, error) {
 		fmt.Println("read body error:", err)
 		return nil, err
 	}
-
+	fmt.Println("获取数据成功：", url)
 	return body, nil
 }

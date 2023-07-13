@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"friends-rss/config"
+	"github.com/noaway/dateparse"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,7 +14,6 @@ import (
 type ArticleData struct {
 	Floor   int    `json:"floor"`
 	Title   string `json:"title"`
-	Created string `json:"created"`
 	Updated string `json:"updated"`
 	Link    string `json:"link"`
 	Author  string `json:"author"`
@@ -28,9 +28,33 @@ type StatisticalData struct {
 	LastUpdatedTime string `json:"last_updated_time"`
 }
 
+type ArticleDataArr []*ArticleData
+
+// 实现sort.Interface接口的获取元素数量方法
+func (m ArticleDataArr) Len() int {
+	return len(m)
+}
+
+// 实现sort.Interface接口的比较元素方法
+func (m ArticleDataArr) Less(i, j int) bool {
+	// 解析发布时间
+	t, err := dateparse.ParseAny(m[i].Updated)
+	if err != nil {
+		fmt.Println("转换时间格式错误")
+		panic(err.Error())
+	}
+	return t.Unix() > t.Unix()
+}
+
+// 实现sort.Interface接口的交换元素方法
+func (m ArticleDataArr) Swap(i, j int) {
+	m[i], m[j] = m[j], m[i]
+}
+
 type StorageModule struct {
 	StatisticalData StatisticalData `json:"statistical_data"`
-	ArticleData     []*ArticleData  `json:"article_data"`
+	ArticleData     ArticleDataArr  `json:"article_data"`
+	Page            int             `json:"page"`
 }
 
 var StorageInstance *StorageModule

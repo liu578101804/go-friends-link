@@ -2,14 +2,16 @@ package main
 
 import (
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"friends-rss/config"
+	_ "friends-rss/database"
 	"friends-rss/modules"
+	"friends-rss/server/handler"
 	"friends-rss/storage"
 	"friends-rss/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron"
+	"github.com/noaway/dateparse"
 	"net/http"
 	"strings"
 	"time"
@@ -28,11 +30,15 @@ func crawling() {
 	articleData := make([]*storage.ArticleData, 0)
 
 	for i := 0; i < len(links); i++ {
+		fmt.Println("开始获取：", links[i].Url, links[i].Kind)
+
 		rstData, err := utils.GetBody(links[i].Url)
 		if err != nil {
 			fmt.Println(err)
 		}
 		if links[i].Kind == "feed" {
+
+			fmt.Println(links[i].Url, "feed 获取完成")
 			rss := modules.RssModule{}
 			err := xml.Unmarshal(rstData, &rss)
 			if err != nil {
@@ -41,29 +47,57 @@ func crawling() {
 			}
 
 			for _, item := range rss.Channel.Items {
+
+				// 解析发布时间
+				t, err := dateparse.ParseAny(item.PubDate)
+				if err != nil {
+					fmt.Println("转换时间格式错误")
+					panic(err.Error())
+				}
 				articleData = append(articleData, &storage.ArticleData{
 					Floor:   0,
 					Title:   item.Title,
-					Created: item.PubDate,
-					Updated: item.PubDate,
+					Updated: t.Format("2006-01-02 15:04:05"),
 					Link:    item.Link,
 					Author:  links[i].Author,
 					Avatar:  links[i].Avatar,
 				})
 			}
+
+		} else if links[i].Kind == "atom" {
+
+			fmt.Println(links[i].Url, "atom 获取完成")
+			atom := modules.AtomModule{}
+			err := xml.Unmarshal(rstData, &atom)
+			if err != nil {
+				fmt.Printf("Error Decode: %v\n", err)
+				return
+			}
+
+			for _, item := range atom.Entry {
+				// 解析发布时间
+				t, err := dateparse.ParseAny(item.Updated)
+				if err != nil {
+					fmt.Println("转换时间格式错误")
+					panic(err.Error())
+				}
+				articleData = append(articleData, &storage.ArticleData{
+					Floor:   0,
+					Title:   item.Title,
+					Updated: t.Format("2006-01-02 15:04:05"),
+					Link:    item.Link,
+					Author:  links[i].Author,
+					Avatar:  links[i].Avatar,
+				})
+			}
+
 		}
+
 	}
 	// 保存到本地
 	storage.SaveArticleData(articleData)
 
 	fmt.Println("本次获取数据完成")
-}
-
-// 返回错误信息
-func RsError(err error, c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": err.Error(),
-	})
 }
 
 // Cors 开放所有接口的OPTIONS方法
@@ -106,18 +140,20 @@ func Cors() gin.HandlerFunc {
 /*定时任务*/
 func StartCron() {
 	s := gocron.NewScheduler(time.UTC)
+
 	if config.ConfigInstance.Cron == "" {
 		fmt.Println("调度表达式异常")
 		return
 	}
 	fmt.Println("调度表达式为：", config.ConfigInstance.Cron)
-	s.Cron(config.ConfigInstance.Cron).Do(func() {
+	s.Cron(config.ConfigInstance.Cron).Tag("crawling").Do(func() {
 		// 获取数据
 		crawling()
 		fmt.Println("执行了一次定时任务...")
 		_, t := s.NextRun()
 		fmt.Println("下一次执行时间：", t.Format("2006-01-02 15:04:05"))
 	})
+
 	// 启动
 	s.StartBlocking()
 }
@@ -130,88 +166,8 @@ func main() {
 	r := gin.Default()
 	r.Use(Cors())
 
-	// 添加友链
-	r.POST("/link", func(c *gin.Context) {
-		token := c.DefaultQuery("token", "")
-		if token != config.ConfigInstance.Token {
-			RsError(errors.New("token error"), c)
-			return
-		}
-
-		requestM := new(modules.LinkItem)
-		err := c.BindJSON(requestM)
-		if err != nil {
-			RsError(err, c)
-			return
-		}
-		err = config.AddLinks(requestM)
-		if err != nil {
-			RsError(err, c)
-			return
-		}
-		c.JSON(200, gin.H{
-			"message": "success",
-		})
-	})
-
-	// 添加友链
-	r.PUT("/link", func(c *gin.Context) {
-		token := c.DefaultQuery("token", "")
-		if token != config.ConfigInstance.Token {
-			RsError(errors.New("token error"), c)
-			return
-		}
-
-		requestM := new(modules.LinkItem)
-		err := c.BindJSON(requestM)
-		if err != nil {
-			RsError(err, c)
-			return
-		}
-		err = config.UpdateLinks(requestM)
-		if err != nil {
-			RsError(err, c)
-			return
-		}
-		c.JSON(200, gin.H{
-			"message": "success",
-		})
-	})
-
-	// 删除友链
-	r.DELETE("/link", func(c *gin.Context) {
-		token := c.DefaultQuery("token", "")
-		if token != config.ConfigInstance.Token {
-			RsError(errors.New("token error"), c)
-			return
-		}
-
-		url := c.DefaultQuery("url", "")
-		if url == "" {
-			RsError(errors.New("参数不能为空"), c)
-			return
-		}
-		err := config.DelLinks(url)
-		if err != nil {
-			RsError(err, c)
-			return
-		}
-		c.JSON(200, gin.H{
-			"message": "success",
-		})
-	})
-
-	// 禁止访问配置文件
-	r.GET("/config.json", func(c *gin.Context) {
-		c.JSON(403, gin.H{
-			"message": "Forbidden",
-		})
-	})
-
-	// 获取数据
-	r.GET("/data", func(c *gin.Context) {
-		c.JSON(200, storage.StorageInstance)
-	})
+	// 注册API
+	handler.RegisterAPI(r)
 
 	r.Run(fmt.Sprintf(":%d", config.ConfigInstance.Port))
 }
