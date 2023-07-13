@@ -15,7 +15,9 @@ FROM golang:1.20
 #ENV ZONEINFO=/app/zoneinfo.zip
 RUN mkdir /app
 WORKDIR /app
-COPY --from=builder /src/app    /app
+COPY --from=builder /src/app    /app/app
+COPY --from=builder /src/ui    /app/ui
+COPY --from=builder /src/web    /app/web
 # 指定运行时环境变量
 ENV GIN_MODE=release \
     TZ=Asia/Shanghai

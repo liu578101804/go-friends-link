@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"strconv"
+	"time"
 )
 
 // SaveFriendFunc 添加朋友
@@ -31,6 +32,10 @@ func SaveFriendFunc(c *gin.Context) {
 	friend := database.NewFriends()
 	// 保存到数据库
 	friend.WebUrl = requestM.WebUrl
+
+	// 最后一次更新时间
+	lastUpdateTime := time.Now().Add(-time.Hour * 4800) //往前推200天
+
 	// 如果没找到
 	if err = database.D.Where("web_url=?", requestM.WebUrl).First(friend).Error; err == gorm.ErrRecordNotFound {
 		log.Println("新增友链")
@@ -39,6 +44,7 @@ func SaveFriendFunc(c *gin.Context) {
 		friend.WebDescribe = requestM.WebDescribe
 		friend.AuthorName = requestM.AuthorName
 		friend.AuthorAvatar = requestM.AuthorAvatar
+		friend.LastUpdateTime = &lastUpdateTime
 		err = database.D.Save(friend).Error
 	} else {
 		log.Println("更新友链")
@@ -47,6 +53,7 @@ func SaveFriendFunc(c *gin.Context) {
 		friend.WebDescribe = requestM.WebDescribe
 		friend.AuthorName = requestM.AuthorName
 		friend.AuthorAvatar = requestM.AuthorAvatar
+		friend.LastUpdateTime = &lastUpdateTime
 		err = database.D.Updates(friend).Error
 	}
 	if err != nil {

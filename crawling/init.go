@@ -5,6 +5,7 @@ import (
 	"friends-rss/database"
 	"github.com/mmcdole/gofeed"
 	"log"
+	"time"
 )
 
 // Crawling 去获取消息
@@ -27,13 +28,17 @@ func Crawling() {
 		// 打印日志
 		log.Println("准备获取：", friend.SubscribeUrl, friend.SubscribeUrl)
 		// 判断是否开启订阅
-		if friend.SubscribeUrl != "" {
+		if friend.SubscribeUrl == "" {
 			log.Println(friend.SubscribeUrl, friend.WebTitle, friend.AuthorName)
 			log.Println("此朋友没开启订阅")
 			break
 		}
 
 		// 这个朋友的最后的更新时间
+		if friend.LastUpdateTime == nil || friend.LastUpdateTime.IsZero() {
+			nowTime := time.Now().Add(-time.Hour * 4800) //往前推200天
+			friend.LastUpdateTime = &nowTime
+		}
 		siteLastUpdateTime := friend.LastUpdateTime
 
 		// 使用三方库解析

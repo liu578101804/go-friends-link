@@ -20,6 +20,8 @@ func InitConfig() {
 	fmt.Println("生产随机数 token：", token)
 	ConfigInstance.Cron = "*/1 * * * *"
 	fmt.Println("默认的调度(每分钟一次) cron:", ConfigInstance.Cron)
+	//nowTime := time.Now().Add(-time.Hour * 2400) //往前推100天
+	ConfigInstance.LastCrawlingTime = time.Now().Format("2006-01-02 15:04:05")
 	syncFile()
 }
 
