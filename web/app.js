@@ -18,27 +18,30 @@ if(typeof(fdataUser) !=="undefined"){
 let container = document.getElementById('cf-container') ||  document.getElementById('fcircleContainer');
 
 // 打印文章内容 cf-article
+let index = 1
 function loadArticleItem(datalist){
     let articleItem = ""
     for (let i = 0;i<datalist.length;i++){
+
         let item = datalist[i];
         articleItem +=`
       <div class="cf-article">
         <a class="cf-article-title" href="${item.link}" target="_blank" rel="noopener nofollow" data-title="${item.title}">${item.title}</a>
-        <span class="cf-article-floor"></span>
+        <span class="cf-article-floor">${index}</span>
         <div class="cf-article-avatar no-lightbox flink-item-icon">
           <img class="cf-img-avatar avatar" src="${item.avatar}" alt="avatar" onerror="this.src='${fdata.error_img}'; this.onerror = null;">
           <a onclick="openMeShow(event)" data-link="${item.link}" class="" target="_blank" rel="noopener nofollow" href="javascript:;"><span class="cf-article-author">${item.author}</span></a>
           <span class="cf-article-time">
-            <span class="cf-time-created"><i class="far fa-calendar-alt">更新于</i>${item.updated}</span>
+            <span class="cf-time-created"><i class="far fa-calendar-alt">发布于</i>${item.created}</span>
           </span>
         </div>
       </div>
       `;
+
+        index = index+1
     }
     container.insertAdjacentHTML('beforeend', articleItem);
 }
-
 
 // 输出基本结构
 function loadStatistical(sdata){
@@ -85,24 +88,7 @@ function loadNextArticle(){
     page = page+1
     fetchArticle(function (json){
         let articleData = eval(json.article_data);
-        let articleItem = ""
-        for (let i = 0;i<articleData.length;i++){
-            let item = articleData[i];
-            articleItem +=`
-      <div class="cf-article">
-        <a class="cf-article-title" href="${item.link}" target="_blank" rel="noopener nofollow" data-title="${item.title}">${item.title}</a>
-        <span class="cf-article-floor"></span>
-        <div class="cf-article-avatar no-lightbox flink-item-icon">
-          <img class="cf-img-avatar avatar" src="${item.avatar}" alt="avatar" onerror="this.src='${fdata.error_img}'; this.onerror = null;">
-          <a onclick="openMeShow(event)" data-link="${item.link}" class="" target="_blank" rel="noopener nofollow" href="javascript:;"><span class="cf-article-author">${item.author}</span></a>
-          <span class="cf-article-time">
-            <span class="cf-time-created"><i class="far fa-calendar-alt">更新于</i>${item.updated}</span>
-          </span>
-        </div>
-      </div>
-      `;
-        }
-        container.insertAdjacentHTML('beforeend', articleItem);
+        loadArticleItem(articleData);
     })
 
 }

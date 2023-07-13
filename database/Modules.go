@@ -10,7 +10,8 @@ type Articles struct {
 	Title        string
 	Link         string
 	Summary      string
-	Updated      string
+	UpdateTime   *time.Time
+	PushTime     *time.Time
 	AuthorName   string
 	AuthorAvatar string
 }
@@ -25,12 +26,17 @@ func (*Articles) TableName() string {
 
 type Friends struct {
 	gorm.Model
-	Url            string
-	WebTitle       string
-	AuthorName     string
-	IsSubscribe    int
-	SubscribeType  string
-	LastUpdateTime time.Time
+
+	WebUrl      string `json:"web_url"`
+	WebTitle    string `json:"web_title"`
+	WebDescribe string `json:"web_describe"`
+
+	AuthorName   string `json:"author_name"`
+	AuthorAvatar string `json:"author_avatar"`
+
+	SubscribeUrl string `json:"subscribe_url"`
+
+	LastUpdateTime *time.Time `json:"last_update_time"`
 }
 
 func NewFriends() *Friends {

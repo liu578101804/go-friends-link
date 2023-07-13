@@ -1,104 +1,17 @@
 package main
 
 import (
-	"encoding/xml"
 	"fmt"
 	"friends-rss/config"
+	"friends-rss/crawling"
 	_ "friends-rss/database"
-	"friends-rss/modules"
 	"friends-rss/server/handler"
-	"friends-rss/storage"
-	"friends-rss/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron"
-	"github.com/noaway/dateparse"
 	"net/http"
 	"strings"
 	"time"
 )
-
-// 去爬取消息
-func crawling() {
-
-	links := config.ConfigInstance.Links
-
-	if len(links) == 0 {
-		fmt.Println("没有友链存在，本次结束!")
-		return
-	}
-
-	articleData := make([]*storage.ArticleData, 0)
-
-	for i := 0; i < len(links); i++ {
-		fmt.Println("开始获取：", links[i].Url, links[i].Kind)
-
-		rstData, err := utils.GetBody(links[i].Url)
-		if err != nil {
-			fmt.Println(err)
-		}
-		if links[i].Kind == "feed" {
-
-			fmt.Println(links[i].Url, "feed 获取完成")
-			rss := modules.RssModule{}
-			err := xml.Unmarshal(rstData, &rss)
-			if err != nil {
-				fmt.Printf("Error Decode: %v\n", err)
-				return
-			}
-
-			for _, item := range rss.Channel.Items {
-
-				// 解析发布时间
-				t, err := dateparse.ParseAny(item.PubDate)
-				if err != nil {
-					fmt.Println("转换时间格式错误")
-					panic(err.Error())
-				}
-				articleData = append(articleData, &storage.ArticleData{
-					Floor:   0,
-					Title:   item.Title,
-					Updated: t.Format("2006-01-02 15:04:05"),
-					Link:    item.Link,
-					Author:  links[i].Author,
-					Avatar:  links[i].Avatar,
-				})
-			}
-
-		} else if links[i].Kind == "atom" {
-
-			fmt.Println(links[i].Url, "atom 获取完成")
-			atom := modules.AtomModule{}
-			err := xml.Unmarshal(rstData, &atom)
-			if err != nil {
-				fmt.Printf("Error Decode: %v\n", err)
-				return
-			}
-
-			for _, item := range atom.Entry {
-				// 解析发布时间
-				t, err := dateparse.ParseAny(item.Updated)
-				if err != nil {
-					fmt.Println("转换时间格式错误")
-					panic(err.Error())
-				}
-				articleData = append(articleData, &storage.ArticleData{
-					Floor:   0,
-					Title:   item.Title,
-					Updated: t.Format("2006-01-02 15:04:05"),
-					Link:    item.Link,
-					Author:  links[i].Author,
-					Avatar:  links[i].Avatar,
-				})
-			}
-
-		}
-
-	}
-	// 保存到本地
-	storage.SaveArticleData(articleData)
-
-	fmt.Println("本次获取数据完成")
-}
 
 // Cors 开放所有接口的OPTIONS方法
 func Cors() gin.HandlerFunc {
@@ -137,10 +50,10 @@ func Cors() gin.HandlerFunc {
 	}
 }
 
-/*定时任务*/
+// StartCron 定时任务
 func StartCron() {
+	// 创建调度
 	s := gocron.NewScheduler(time.UTC)
-
 	if config.ConfigInstance.Cron == "" {
 		fmt.Println("调度表达式异常")
 		return
@@ -148,26 +61,24 @@ func StartCron() {
 	fmt.Println("调度表达式为：", config.ConfigInstance.Cron)
 	s.Cron(config.ConfigInstance.Cron).Tag("crawling").Do(func() {
 		// 获取数据
-		crawling()
+		crawling.Crawling()
 		fmt.Println("执行了一次定时任务...")
 		_, t := s.NextRun()
 		fmt.Println("下一次执行时间：", t.Format("2006-01-02 15:04:05"))
 	})
-
 	// 启动
-	s.StartBlocking()
+	s.StartAsync()
 }
 
 func main() {
-
-	//启动定时任务
+	// 启动定时任务
 	go StartCron()
-
+	// 引擎
 	r := gin.Default()
+	// 注册中间件
 	r.Use(Cors())
-
 	// 注册API
 	handler.RegisterAPI(r)
-
+	// 启动
 	r.Run(fmt.Sprintf(":%d", config.ConfigInstance.Port))
 }
