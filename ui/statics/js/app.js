@@ -1,7 +1,8 @@
 
 
+
 // 默认数据
-const k_data = {
+var k_data = {
     api_url: '',
     error_img: 'https://friend-links.henjinet.com/ui/statics/imgs/default.jpg'
 }
@@ -15,11 +16,14 @@ if(typeof(kun_user) !=="undefined"){
     }
 }
 
-// 获取主容器
-let container = document.getElementById('k-container');
+// 主容器
+var container = document.getElementById('k-container');
+// 加载的页面
+var page = 1;
+// 坐标缓存
+var articleIndex = 1
 
 // 打印文章内容 k-article
-let index = 1
 function loadArticleItem(datalist){
     let articleItem = ""
     for (let i = 0;i<datalist.length;i++){
@@ -28,7 +32,7 @@ function loadArticleItem(datalist){
         articleItem +=`
       <div class="k-article">
         <a class="k-article-title" href="${item.link}" target="_blank" rel="noopener nofollow" data-title="${item.title}">${item.title}</a>
-        <span class="k-article-floor">${index}</span>
+        <span class="k-article-floor">${articleIndex}</span>
         <div class="k-article-avatar no-lightbox flink-item-icon">
           <img class="k-img-avatar avatar" src="${item.avatar}" alt="avatar" onerror="this.src='${k_data.error_img}'; this.onerror = null;">
           <a onclick="openMeShow(event)" data-link="${item.link}" class="" target="_blank" rel="noopener nofollow" href="javascript:;"><span class="k-article-author">${item.author}</span></a>
@@ -39,7 +43,7 @@ function loadArticleItem(datalist){
       </div>
       `;
 
-        index = index+1
+        articleIndex = articleIndex+1
     }
     container.insertAdjacentHTML('beforeend', articleItem);
 }
@@ -91,7 +95,6 @@ function loadNextArticle(){
 }
 
 // 获取文章列表
-let page = 1;
 function fetchArticle(call_back){
     let fetchUrl = k_data.api_url+"/articles?page="+page;
     fetch(fetchUrl)
@@ -109,7 +112,6 @@ function fetchArticle(call_back){
 }
 
 function init(){
-
     // 检查配置文件信息
     if (k_data.api_url==""){
         let errMsg = "请配置主机地址"
@@ -129,4 +131,9 @@ function init(){
     })
 }
 
+// 启动
 init()
+
+
+
+
