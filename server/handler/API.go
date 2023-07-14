@@ -6,6 +6,7 @@ import (
 	"friends-rss/database"
 	"friends-rss/modules"
 	"github.com/gin-gonic/gin"
+	"github.com/mmcdole/gofeed"
 	"gorm.io/gorm"
 	"log"
 	"strconv"
@@ -28,31 +29,36 @@ func SaveFriendFunc(c *gin.Context) {
 		return
 	}
 
+	// 获取订阅信息
+	fp := gofeed.NewParser()
+	feed, err := fp.ParseURL(requestM.SubscribeUrl)
+	if err != nil {
+		log.Println("获取订阅异常：", err)
+		RsError(errors.New("获取订阅异常"), c)
+		return
+	}
+
+	// 默认的最后一次更新时间
+	lastUpdateTime := time.Now().Add(-time.Hour * 7200) //往前推300天
+
 	// 查询是否存在
 	friend := database.NewFriends()
-	// 保存到数据库
-	friend.WebUrl = requestM.WebUrl
-
-	// 最后一次更新时间
-	lastUpdateTime := time.Now().Add(-time.Hour * 4800) //往前推200天
-
-	// 如果没找到
-	if err = database.D.Where("web_url=?", requestM.WebUrl).First(friend).Error; err == gorm.ErrRecordNotFound {
+	if err = database.D.Where("site_url=?", feed.Link).First(friend).Error; err == gorm.ErrRecordNotFound { // 如果没找到
 		log.Println("新增友链")
 		friend.SubscribeUrl = requestM.SubscribeUrl
-		friend.WebTitle = requestM.WebTitle
-		friend.WebDescribe = requestM.WebDescribe
-		friend.AuthorName = requestM.AuthorName
-		friend.AuthorAvatar = requestM.AuthorAvatar
+		friend.SiteTitle = feed.Title
+		friend.SiteDescribe = feed.Description
+		friend.SiteUrl = feed.Link
+		friend.SiteLogo = requestM.SiteLogo
 		friend.LastUpdateTime = &lastUpdateTime
 		err = database.D.Save(friend).Error
-	} else {
+	} else { // 已经存在
 		log.Println("更新友链")
 		friend.SubscribeUrl = requestM.SubscribeUrl
-		friend.WebTitle = requestM.WebTitle
-		friend.WebDescribe = requestM.WebDescribe
-		friend.AuthorName = requestM.AuthorName
-		friend.AuthorAvatar = requestM.AuthorAvatar
+		friend.SiteTitle = feed.Title
+		friend.SiteDescribe = feed.Description
+		friend.SiteUrl = feed.Link
+		friend.SiteLogo = requestM.SiteLogo
 		friend.LastUpdateTime = &lastUpdateTime
 		err = database.D.Updates(friend).Error
 	}
@@ -109,8 +115,8 @@ func DontGetConfigFunc(c *gin.Context) {
 	})
 }
 
-// GetAllFunc 获取数据
-func GetAllFunc(c *gin.Context) {
+// GetAllArticlesFunc 获取文章数据
+func GetAllArticlesFunc(c *gin.Context) {
 	// 获取页码
 	page := c.DefaultQuery("page", "1")
 	pageInt, err := strconv.Atoi(page)
@@ -124,9 +130,9 @@ func GetAllFunc(c *gin.Context) {
 
 	rsArticles := make([]*modules.ResponseArticleModule, 0)
 
-	// 获取十条
-	articles := make([]*database.Articles, 0)
-	if err := database.D.Order("push_time desc").Offset((pageInt - 1) * 10).Limit(10).Find(&articles).Error; err != nil {
+	// 从数据库读取
+	articles, err := database.GetAllArticlesUniFriend((pageInt-1)*10, 10)
+	if err != nil {
 		log.Println("获取异常：", err.Error())
 		RsError(errors.New("获取异常"), c)
 		return
@@ -135,12 +141,11 @@ func GetAllFunc(c *gin.Context) {
 	for _, article := range articles {
 
 		art := &modules.ResponseArticleModule{
-			Floor:   0,
 			Title:   article.Title,
-			Created: article.PushTime.Format("2006-01-02 15:04:05"),
+			Created: article.PushTime.Format("2006-01-02"),
 			Link:    article.Link,
-			Author:  article.AuthorName,
-			Avatar:  article.AuthorAvatar,
+			Author:  article.SiteTitle,
+			Avatar:  article.SiteLogo,
 		}
 
 		if article.UpdateTime != nil && !article.UpdateTime.IsZero() {
@@ -203,14 +208,14 @@ func RsError(err error, c *gin.Context) {
 }
 
 func RegisterAPI(r *gin.Engine) {
-	// 获取全部朋友
-	r.GET("/friend", GetAllFriends)
-	// 获取数据
-	r.GET("/all", GetAllFunc)
 	// 禁止访问配置文件
 	r.GET("/config.json", DontGetConfigFunc)
+	// 获取文章列表
+	r.GET("/articles", GetAllArticlesFunc)
+	// 获取全部朋友
+	r.GET("/friends", GetAllFriends)
 	// 删除友链
-	r.DELETE("/friend", DelFriendFunc)
+	r.DELETE("/friends", DelFriendFunc)
 	// 添加友链
-	r.POST("/friend", SaveFriendFunc)
+	r.POST("/friends", SaveFriendFunc)
 }

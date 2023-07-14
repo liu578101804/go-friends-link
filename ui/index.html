@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>你的朋友们</title>
+    <title>锦鲤池</title>
 </head>
 <body>
     <div id="app" class="container-fluid">
 
         <div class="row">
-            <div class="col">、<div class="jumbotron">
-                <h1 class="display-4">友链管理</h1>
-                <p class="lead">如果你的好友博客支持订阅，可以添加都这里，自动获取最新内容</p>
-            </div>
+            <div class="col">
+                <div class="jumbotron">
+                    <h1 class="display-4">友链管理</h1>
+                    <p class="lead">如果你的好友博客支持订阅，可以添加都这里，自动获取最新内容</p>
+                </div>
                 <table class="table">
                     <thead>
                     <tr>
@@ -25,13 +26,13 @@
                     </thead>
                     <tbody>
                     <tr v-for="(item,index) in friends">
-                        <th scope="row">{{item.ID}}</th>
-                        <td>{{item.web_title}}</td>
-                        <td>{{item.web_url}}</td>
+                        <th scope="row">{{item.id}}</th>
+                        <td>{{item.site_title}}</td>
+                        <td>{{item.site_url}}</td>
                         <td>{{item.subscribe_url}}</td>
                         <td>{{item.last_update_time}}</td>
                         <td>
-                            <button type="button" class="btn btn-primary" v-on:click="onUpdateFriend(index)" >更新</button>
+                            <button type="button" class="btn btn-primary" v-on:click="onUpdateFriend(index)" >修改</button>
                             <button type="button" class="btn btn-danger"  v-on:click="onDeleteFriend(index)" >删除</button>
                         </td>
                     </tr>
@@ -50,73 +51,34 @@
                 <div>
                     <h2>{{inputTitle}}</h2>
                     <div class="form-group">
-                        <label for="web_url">网站地址</label>
-                        <input :disabled="inputIsChange" type="text" class="form-control" id="web_url" aria-describedby="emailHelp" v-model="inputFriend.web_url">
-                        <small id="emailHelp" class="form-text text-muted">https:// 或者 http:// 开头，新建后不能修改</small>
-                    </div>
-                    <div class="form-group">
                         <label for="subscribe_url">订阅地址</label>
-                        <input type="text" class="form-control" id="subscribe_url" v-model="inputFriend.subscribe_url">
+                        <input :disabled="inputFriend.id" type="text" class="form-control" id="subscribe_url" v-model="inputFriend.subscribe_url">
                     </div>
                     <div class="form-group">
-                        <label for="web_title">网站名字</label>
-                        <input type="text" class="form-control" id="web_title"  v-model="inputFriend.web_title">
+                        <label for="site_logo">网站Logo</label>
+                        <input type="text" class="form-control" id="site_logo" v-model="inputFriend.site_logo">
                     </div>
-                    <div class="form-group">
-                        <label for="author_name">作者名字</label>
-                        <input type="text" class="form-control" id="author_name" v-model="inputFriend.author_name">
-                    </div>
-                    <div class="form-group">
-                        <label for="author_avatar">作者头像地址</label>
-                        <input type="text" class="form-control" id="author_avatar" v-model="inputFriend.author_avatar">
-                    </div>
-                    <div class="form-group">
-                        <label for="web_describe">网站描述</label>
-                        <textarea class="form-control" id="web_describe" rows="3" v-model="inputFriend.web_describe"></textarea>
-                    </div>
-
                     <button type="submit" class="btn btn-primary" v-on:click="onSaveFriend">保存</button>
                 </div>
             </div>
         </div>
-
     </div>
 
-
-    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    ...
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary">Save changes</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     <script>
-        var app = new Vue({
+        let app = new Vue({
             el: '#app',
             data: {
+                urlRequest: {
+                    token: ""
+                },
                 token: '',
                 friends: [],
                 inputFriend: {
-                    web_url: "",
-                    web_title: "",
                     subscribe_url: "",
-                    author_name: "",
-                    author_avatar: "",
-                    web_describe: ""
+                    site_logo: "",
                 },
                 inputTitle: "添加朋友",
                 inputIsChange: false,
@@ -137,7 +99,7 @@
                 onSaveFriend: function (){
                     if (!this.checkToken()){return}
                     let self = this
-                    const response = fetch(this.server_url+"/friend?token="+this.token, {
+                    const response = fetch(this.server_url+"/friends?token="+this.token, {
                         method: 'post',
                         headers: {
                             'Content-Type': 'application/json'
@@ -147,8 +109,12 @@
                     response.then(res => res.json())
                         .then(json=>{
                             if(json.message==="success"){
-                                self.showMsg("添加成功")
-                                self.friends.push(json.data)
+                                if(this.inputFriend.ID){
+                                    self.showMsg("更新成功")
+                                }else{
+                                    self.showMsg("添加成功")
+                                    self.friends.push(json.data)
+                                }
                             }
                         })
                 },
@@ -162,7 +128,7 @@
                     if (!this.checkToken()){return}
                     let friend = this.friends[index]
                     let self = this
-                    const response = fetch(this.server_url+`/friend?token=${this.token}&id=${friend.ID}`, { method: "DELETE" })
+                    const response = fetch(this.server_url+`/friends?token=${this.token}&id=${friend.id}`, { method: "DELETE" })
                     response.then(res => res.json())
                         .then(json =>{
                             if(json.message==="success"){
@@ -176,21 +142,60 @@
                 fetchFriends: function (){
                     console.log("获取朋友列表")
                     let self = this
-                    const response = fetch(this.server_url+"/friend", { method: "GET" })
+                    const response = fetch(this.server_url+"/friends", { method: "GET" })
                     response.then(res => res.json())
                         .then(json =>{
                             self.friends = json.data
                         })
                 },
+
+                // url添加参数
+                updateQueryStringParameter: function(uri, key, value) {
+                    if(!value) { return uri }
+                    let re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
+                    let separator = uri.indexOf('?') !== -1 ? "&" : "?";
+                    if (uri.match(re)) {
+                        return uri.replace(re, '$1' + key + "=" + value + '$2');
+                    }
+                    else {
+                        return uri + separator + key + "=" + value;
+                    }
+                },
+                // 获取url参数
+                getUrlRequest: function() {
+                    let url = location.search; //获取url中"?"符后的字串
+                    let tRequest = new Object();
+                    if (url.indexOf("?") != -1) {   //判断 URL 中是否包含查询字符串
+                        let str = url.substr(1);   //如果 URL 中包含查询字符串，截取查询字符串，去掉前面的“?”号。
+                        let strs = str.split("&");    //将查询字符串按“&”号分割成一个个参数对。
+                        for(let i = 0; i < strs.length; i ++) {    //循环遍历所有的参数对。
+                            tRequest[strs[i].split("=")[0]]=unescape(strs[i].split("=")[1]);    //对每一个参数对进行处理，将参数名和参数值存储到 tRequest 对象中。
+                        }
+                    }
+                    return tRequest;
+                }
+
             },
             mounted: function (){
+                this.urlRequest = this.getUrlRequest()
+                if(typeof(this.urlRequest.token) == "undefined" || this.urlRequest.token==""){
+                    // 使用系统默认的输入框采集token
+                    let token = prompt("请输入服务端的管理Token", "");
+                    if (token)//如果返回的有内容
+                    {
+                        let uri = window.location.href
+                        let newUri = this.updateQueryStringParameter(uri, "token", token)
+                        window.location.href = newUri
+                    }else{
+                        alert("没输入token，将无法管理朋友哦")
+                    }
+                }
+                this.token = this.urlRequest.token
                 this.fetchFriends()
             }
         })
     </script>
 
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
 
     <style>
 

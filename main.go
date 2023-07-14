@@ -77,6 +77,8 @@ func main() {
 	r := gin.Default()
 	// 注册中间件
 	r.Use(Cors())
+	// 添加后台
+	r.Static("/ui", "./ui")
 	// 注册API
 	handler.RegisterAPI(r)
 	// 启动

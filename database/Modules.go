@@ -1,19 +1,24 @@
 package database
 
 import (
-	"gorm.io/gorm"
 	"time"
 )
 
+type Model struct {
+	ID        int       `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	//DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+}
+
 type Articles struct {
-	gorm.Model
-	Title        string
-	Link         string
-	Summary      string
-	UpdateTime   *time.Time
-	PushTime     *time.Time
-	AuthorName   string
-	AuthorAvatar string
+	Model
+	Title      string
+	Link       string
+	Summary    string
+	UpdateTime *time.Time
+	PushTime   *time.Time
+	FriendId   int
 }
 
 func NewArticles() *Articles {
@@ -25,14 +30,11 @@ func (*Articles) TableName() string {
 }
 
 type Friends struct {
-	gorm.Model
-
-	WebUrl      string `json:"web_url"`
-	WebTitle    string `json:"web_title"`
-	WebDescribe string `json:"web_describe"`
-
-	AuthorName   string `json:"author_name"`
-	AuthorAvatar string `json:"author_avatar"`
+	Model
+	SiteUrl      string `json:"site_url"`
+	SiteTitle    string `json:"site_title"`
+	SiteDescribe string `json:"site_describe"`
+	SiteLogo     string `json:"site_logo"`
 
 	SubscribeUrl string `json:"subscribe_url"`
 

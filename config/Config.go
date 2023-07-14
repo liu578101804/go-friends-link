@@ -3,31 +3,32 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"friends-rss/helper"
 	"friends-rss/modules"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"time"
 )
 
 var ConfigInstance *modules.ConfigModule
 
+const configFilePath = "./config.json"
+
 func InitConfig() {
 	ConfigInstance.Port = 80 // 默认80端口
-	// 随机生成
-	token := fmt.Sprintf("%08v", rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(100000000))
+	// 随机生成 8 位字符
+	token := helper.RandString(8)
 	ConfigInstance.Token = token
 	fmt.Println("生产随机数 token：", token)
 	ConfigInstance.Cron = "*/1 * * * *"
 	fmt.Println("默认的调度(每分钟一次) cron:", ConfigInstance.Cron)
-	//nowTime := time.Now().Add(-time.Hour * 2400) //往前推100天
 	ConfigInstance.LastCrawlingTime = time.Now().Format("2006-01-02 15:04:05")
 	syncFile()
 }
 
 func init() {
 	ConfigInstance = &modules.ConfigModule{}
-	data, err := ioutil.ReadFile("config.json")
+	data, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
 		fmt.Println("读取文件错误：", err.Error())
 		InitConfig()
@@ -46,7 +47,7 @@ func UpdateCrawlingTime() {
 
 func syncFile() error {
 	data, _ := json.Marshal(ConfigInstance)
-	err := ioutil.WriteFile("./config.json", data, 0666) //写入文件(字节数组)
+	err := ioutil.WriteFile(configFilePath, data, 0666) //写入文件(字节数组)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

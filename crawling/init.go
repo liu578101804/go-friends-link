@@ -29,17 +29,20 @@ func Crawling() {
 		log.Println("准备获取：", friend.SubscribeUrl, friend.SubscribeUrl)
 		// 判断是否开启订阅
 		if friend.SubscribeUrl == "" {
-			log.Println(friend.SubscribeUrl, friend.WebTitle, friend.AuthorName)
+			log.Println("本次获取的站点信息：", friend.SubscribeUrl, friend.SiteTitle)
 			log.Println("此朋友没开启订阅")
 			break
 		}
 
 		// 这个朋友的最后的更新时间
 		if friend.LastUpdateTime == nil || friend.LastUpdateTime.IsZero() {
-			nowTime := time.Now().Add(-time.Hour * 4800) //往前推200天
+			nowTime := time.Now().Add(-time.Hour * 7200) //往前推300天
 			friend.LastUpdateTime = &nowTime
+			log.Println("此站点最后更新时间为空，给他默认的时间：", nowTime)
 		}
+		// 缓存站点的最后更新时间
 		siteLastUpdateTime := friend.LastUpdateTime
+		log.Println("此站点最后更新时间为：", siteLastUpdateTime)
 
 		// 使用三方库解析
 		fp := gofeed.NewParser()
@@ -57,8 +60,7 @@ func Crawling() {
 				article.UpdateTime = item.UpdatedParsed
 				article.Title = item.Title
 				article.Summary = item.Description
-				article.AuthorName = friend.AuthorName
-				article.AuthorAvatar = friend.AuthorAvatar
+				article.FriendId = friend.ID
 				database.D.Save(article)
 				// 更新最新文章时间
 				if article.PushTime.Unix() > friend.LastUpdateTime.Unix() {
