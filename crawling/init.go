@@ -74,8 +74,7 @@ func Crawling() {
 			log.Println("更新朋友最后更新时间异常:", err)
 		}
 	}
-	log.Println("本次获取数据完成")
-
+	
 	// 更新下最后更新时间
 	config.UpdateCrawlingTime()
 }

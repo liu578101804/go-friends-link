@@ -7,10 +7,10 @@ import (
 	_ "friends-rss/database"
 	"friends-rss/server/handler"
 	"github.com/gin-gonic/gin"
-	"github.com/go-co-op/gocron"
+	"github.com/robfig/cron/v3"
+	"log"
 	"net/http"
 	"strings"
-	"time"
 )
 
 // Cors 开放所有接口的OPTIONS方法
@@ -50,29 +50,42 @@ func Cors() gin.HandlerFunc {
 	}
 }
 
+// Cron 全局调度器
+var Cron *cron.Cron
+
 // StartCron 定时任务
 func StartCron() {
-	// 创建调度
-	s := gocron.NewScheduler(time.UTC)
-	if config.ConfigInstance.Cron == "" {
-		fmt.Println("调度表达式异常")
+	cronStr := config.ConfigInstance.Cron
+	if cronStr == "" {
+		log.Println("调度表达式异常")
 		return
 	}
-	fmt.Println("调度表达式为：", config.ConfigInstance.Cron)
-	s.Cron(config.ConfigInstance.Cron).Tag("crawling").Do(func() {
+	log.Println("调度表达式为：", cronStr)
+	Cron = cron.New()
+	var entryId cron.EntryID
+	entryId, _ = Cron.AddFunc(cronStr, func() {
+		// 定时任务执行开始标识
+		log.Println("+++ 开始执行定时任务...")
 		// 获取数据
 		crawling.Crawling()
-		fmt.Println("执行了一次定时任务...")
-		_, t := s.NextRun()
-		fmt.Println("下一次执行时间：", t.Format("2006-01-02 15:04:05"))
+		// 定时任务执行结束标识
+		log.Println("+++ 执行了一次定时任务...")
+		// 打印下次执行时间
+		printNextRunTime(entryId)
 	})
-	// 启动
-	s.StartAsync()
+	// 启动，自动启分支
+	Cron.Start()
+	// 打印下次执行时间
+	printNextRunTime(entryId)
+}
+func printNextRunTime(id cron.EntryID) {
+	nextTime := Cron.Entry(id).Next.Format("2006-01-02 15:04:05")
+	log.Println("调度器下次执行时间为：", nextTime)
 }
 
 func main() {
 	// 启动定时任务
-	go StartCron()
+	StartCron()
 	// 引擎
 	r := gin.Default()
 	// 注册中间件
