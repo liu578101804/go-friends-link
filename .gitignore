@@ -1,6 +1,4 @@
 .idea
 tmp
 go.sum
-database.db
-config.json
-friends-rss.exe
+data

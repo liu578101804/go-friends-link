@@ -8,9 +8,11 @@ import (
 
 var D *gorm.DB
 
-func init() {
+const DbPath = "./data/database.db"
+
+func Init() {
 	var err error
-	D, err = gorm.Open(sqlite.Open("database.db"), &gorm.Config{
+	D, err = gorm.Open(sqlite.Open(DbPath), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {

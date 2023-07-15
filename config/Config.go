@@ -12,7 +12,7 @@ import (
 
 var ConfigInstance *modules.ConfigModule
 
-const configFilePath = "./config.json"
+const configFilePath = "./data/config.json"
 
 func InitConfig() {
 	ConfigInstance.Port = 80 // 默认80端口
@@ -20,22 +20,23 @@ func InitConfig() {
 	token := helper.RandString(8)
 	ConfigInstance.Token = token
 	fmt.Println("生产随机数 token：", token)
-	ConfigInstance.Cron = "*/1 * * * *"
-	fmt.Println("默认的调度(每分钟一次) cron:", ConfigInstance.Cron)
+	ConfigInstance.Cron = "30 * * * *"
+	fmt.Println("默认的调度(每小时的30分) cron:", ConfigInstance.Cron)
 	ConfigInstance.LastCrawlingTime = time.Now().Format("2006-01-02 15:04:05")
 	syncFile()
 }
 
-func init() {
+func Init() {
 	ConfigInstance = &modules.ConfigModule{}
 	data, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
-		fmt.Println("读取文件错误：", err.Error())
+		log.Println("读取文件错误：", err.Error())
+		log.Println("开始新建默认配置文件")
 		InitConfig()
 		return
 	}
 	if err := json.Unmarshal(data, ConfigInstance); err != nil {
-		fmt.Println("解析文件错误：", err.Error())
+		log.Println("解析文件错误：", err.Error())
 		InitConfig()
 	}
 }

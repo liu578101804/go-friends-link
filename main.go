@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"friends-rss/config"
 	"friends-rss/crawling"
-	_ "friends-rss/database"
+	"friends-rss/database"
+	"friends-rss/helper"
 	"friends-rss/server/handler"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron/v3"
@@ -53,8 +54,8 @@ func Cors() gin.HandlerFunc {
 // Cron 全局调度器
 var Cron *cron.Cron
 
-// StartCron 定时任务
-func StartCron() {
+// startCron 定时任务
+func startCron() {
 	cronStr := config.ConfigInstance.Cron
 	if cronStr == "" {
 		log.Println("调度表达式异常")
@@ -83,9 +84,31 @@ func printNextRunTime(id cron.EntryID) {
 	log.Println("调度器下次执行时间为：", nextTime)
 }
 
+// checkNeedDir 检查必须的文件夹是否存在
+func checkNeedDir() {
+	log.Println("检查所需要的文件夹是否存在")
+	paths := []string{"./data"}
+	for _, path := range paths {
+		log.Println("检查文件夹：", path)
+		if has, _ := helper.PathExists(path); !has {
+			log.Println("开始创建文件夹：", path)
+			if err := helper.MkdirAllDir(path); err != nil {
+				log.Println("文件夹创建失败：", path)
+				panic(err)
+			}
+		}
+	}
+}
+
 func main() {
+	// 检查必须的文件夹是否存在
+	checkNeedDir()
+	// 初始化配置文件
+	config.Init()
+	// 初始化数据库
+	database.Init()
 	// 启动定时任务
-	StartCron()
+	startCron()
 	// 引擎
 	r := gin.Default()
 	// 注册中间件
