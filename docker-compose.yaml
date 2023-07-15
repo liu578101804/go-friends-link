@@ -1,10 +1,12 @@
 version: '2.0'
 services:
   server:
-    image: liu578101804/go-friends-link:v1
+    image: liu578101804/go-friends-link:latest
     container_name: "go-friends-link"
     restart: always
     environment:
       - TZ=Asia/Shanghai
+    volumes:
+      - ./data:/app/data
     ports:
       - 80:80
