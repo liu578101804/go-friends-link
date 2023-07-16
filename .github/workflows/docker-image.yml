@@ -31,7 +31,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build the Docker image
-        run: docker build --file Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/go-friends-link:${{ steps.get_version.outputs.VERSION }} .
+        run: docker build --file Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/go-friends-link:${GITHUB_REF/refs\/tags\//} .
 
       - name: Docker image push
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/go-friends-link:${{ steps.get_version.outputs.VERSION }}
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/go-friends-link:${GITHUB_REF/refs\/tags\//}
