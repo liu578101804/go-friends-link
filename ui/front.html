@@ -13,9 +13,34 @@
 <!-- 加样式和功能代码 -->
 <!-- 将api_url改成你后端生成的api地址 -->
 <script type="text/javascript">
-  var kun_user = {
-    api_url: 'http://127.0.0.1' //不要使用 / 结尾
-  }
+
+    function getUrlRequest() {
+        let url = location.search; //获取url中"?"符后的字串
+        let tRequest = new Object();
+        if (url.indexOf("?") != -1) {   //判断 URL 中是否包含查询字符串
+            let str = url.substr(1);   //如果 URL 中包含查询字符串，截取查询字符串，去掉前面的“?”号。
+            let strs = str.split("&");    //将查询字符串按“&”号分割成一个个参数对。
+            for(let i = 0; i < strs.length; i ++) {    //循环遍历所有的参数对。
+                tRequest[strs[i].split("=")[0]]=unescape(strs[i].split("=")[1]);    //对每一个参数对进行处理，将参数名和参数值存储到 tRequest 对象中。
+            }
+        }
+        return tRequest;
+    }
+
+    let req = getUrlRequest()
+    let api_url = "https://friend-links.henjinet.com"
+    if(req.api_url){
+        api_url = req.api_url.trim() //去除空格
+        if(api_url.charAt(api_url.length-1) === "/"){
+            api_url = api_url.substring(0, api_url.length-1)
+        }
+        console.log("使用自定义库：", api_url)
+    }else{
+        console.log("使用开放仓库")
+    }
+    var kun_user = {
+        api_url: api_url //不要使用 / 结尾
+    }
 </script>
 <link rel="stylesheet" href="/ui/statics/styles/app.css">
 <script type="text/javascript" src="/ui/statics/js/app.js"></script>

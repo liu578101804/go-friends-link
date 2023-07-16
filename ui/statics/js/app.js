@@ -58,6 +58,10 @@ function loadStatistical(sdata){
         <span class="k-message">${sdata.friends_num}</span>
       </div>
       <div class="k-data-article">
+        <span class="k-label">活跃</span>
+        <span class="k-message">${sdata.active_num}</span>
+      </div>
+      <div class="k-data-article">
         <span class="k-label">日志</span>
         <span class="k-message">${sdata.article_num}</span>
       </div>

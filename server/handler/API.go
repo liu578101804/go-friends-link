@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -45,20 +46,20 @@ func SaveFriendFunc(c *gin.Context) {
 	friend := database.NewFriends()
 	if err = database.D.Where("site_url=?", feed.Link).First(friend).Error; err == gorm.ErrRecordNotFound { // 如果没找到
 		log.Println("新增友链")
-		friend.SubscribeUrl = requestM.SubscribeUrl
+		friend.SubscribeUrl = strings.TrimSpace(requestM.SubscribeUrl)
 		friend.SiteTitle = feed.Title
 		friend.SiteDescribe = feed.Description
 		friend.SiteUrl = feed.Link
-		friend.SiteLogo = requestM.SiteLogo
+		friend.SiteLogo = strings.TrimSpace(requestM.SiteLogo)
 		friend.LastUpdateTime = &lastUpdateTime
 		err = database.D.Save(friend).Error
 	} else { // 已经存在
 		log.Println("更新友链")
-		friend.SubscribeUrl = requestM.SubscribeUrl
+		friend.SubscribeUrl = strings.TrimSpace(requestM.SubscribeUrl)
 		friend.SiteTitle = feed.Title
 		friend.SiteDescribe = feed.Description
 		friend.SiteUrl = feed.Link
-		friend.SiteLogo = requestM.SiteLogo
+		friend.SiteLogo = strings.TrimSpace(requestM.SiteLogo)
 		friend.LastUpdateTime = &lastUpdateTime
 		err = database.D.Updates(friend).Error
 	}
@@ -98,9 +99,15 @@ func DelFriendFunc(c *gin.Context) {
 		return
 	}
 	// 删除
-	if err := database.D.Model(friend).Unscoped().Delete("id=?", friend.ID).Error; err != nil {
+	if err := database.D.Unscoped().Where("id=?", friend.ID).Delete(database.NewFriends()).Error; err != nil {
 		log.Println(err.Error())
 		RsError(errors.New("删除友链失败"), c)
+		return
+	}
+	// 删除日志
+	if err := database.D.Unscoped().Where("friend_id=?", friend.ID).Delete(database.NewArticles()).Error; err != nil {
+		log.Println(err.Error())
+		RsError(errors.New("删除日志失败"), c)
 		return
 	}
 	c.JSON(200, gin.H{
@@ -139,7 +146,6 @@ func GetAllArticlesFunc(c *gin.Context) {
 	}
 
 	for _, article := range articles {
-
 		art := &modules.ResponseArticleModule{
 			Title:   article.Title,
 			Created: article.PushTime.Format("2006-01-02"),
@@ -147,17 +153,24 @@ func GetAllArticlesFunc(c *gin.Context) {
 			Author:  article.SiteTitle,
 			Avatar:  article.SiteLogo,
 		}
-
 		if article.UpdateTime != nil && !article.UpdateTime.IsZero() {
 			art.Updated = article.UpdateTime.Format("2006-01-02 15:04:05")
 		}
-
 		rsArticles = append(rsArticles, art)
 	}
 
 	// 文章数量
 	var articleCount64 int64
 	if err := database.D.Model(database.NewArticles()).Count(&articleCount64).Error; err != nil {
+		log.Println("获取异常：", err.Error())
+		RsError(errors.New("获取异常"), c)
+		return
+	}
+	// 获取活跃用户数量 前3个月
+	var activeFriendCount64 int64
+	if err := database.D.Model(database.NewFriends()).
+		Where("last_update_time between datetime('NOW','-3 MONTH','START OF MONTH') and datetime('NOW','START OF DAY')").
+		Count(&activeFriendCount64).Error; err != nil {
 		log.Println("获取异常：", err.Error())
 		RsError(errors.New("获取异常"), c)
 		return
@@ -174,7 +187,7 @@ func GetAllArticlesFunc(c *gin.Context) {
 	rst := modules.ResponseModule{
 		StatisticalData: &modules.ResponseStatisticalDataModule{
 			FriendsNum:      len(friends),
-			ActiveNum:       len(friends),
+			ActiveNum:       int(activeFriendCount64),
 			ErrorNum:        0,
 			ArticleNum:      int(articleCount64),
 			LastUpdatedTime: config.ConfigInstance.LastCrawlingTime,

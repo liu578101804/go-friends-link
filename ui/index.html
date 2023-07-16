@@ -42,27 +42,39 @@
             <div class="col-4">
                 <div class="alert alert-success" role="alert">
                     <h4 class="alert-heading">重要参数</h4>
-                    <p>请输入后台的管理token</p>
+                    <p>请输入后台的管理地址</p>
                     <hr>
-                    <input type="text" class="form-control" v-model="token" placeholder="管理Token">
+                    <div class="form-group">
+                        <label for="server_url">管理端地址：</label>
+                        <input type="text" id="server_url" class="form-control" v-model="server_url" placeholder="服务端地址">
+                    </div>
+                    <div class="form-group">
+                        <label for="server_token">管理端Token：</label>
+                        <input type="text" id="server_token" class="form-control" v-model="server_token" placeholder="管理Token">
+                    </div>
+                    <button class="btn btn-info btn-primary" v-on:click="onCatchServerInfo">缓存到本地</button>
                 </div>
 
                 <hr/>
                 <div>
-                    <h2>{{inputTitle}}</h2>
+                    <h2>
+                        {{inputTitle}}
+                        <button class="btn btn-success btn-sm" v-on:click="onAddFriendClick">新增朋友</button>
+                    </h2>
                     <div class="form-group">
-                        <label for="subscribe_url">订阅地址</label>
-                        <input :disabled="inputFriend.id" type="text" class="form-control" id="subscribe_url" v-model="inputFriend.subscribe_url">
+                        <label for="subscribe_url">订阅地址：</label>
+                        <input :disabled="selectFriend.id" type="text" class="form-control" id="subscribe_url" v-model="selectFriend.subscribe_url">
                     </div>
                     <div class="form-group">
-                        <label for="site_logo">网站Logo</label>
-                        <input type="text" class="form-control" id="site_logo" v-model="inputFriend.site_logo">
+                        <label for="site_logo">网站Logo：</label>
+                        <input type="text" class="form-control" id="site_logo" v-model="selectFriend.site_logo">
                     </div>
                     <button type="submit" class="btn btn-primary" v-on:click="onSaveFriend">保存</button>
                 </div>
             </div>
         </div>
     </div>
+
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
 
@@ -71,26 +83,22 @@
         let app = new Vue({
             el: '#app',
             data: {
-                urlRequest: {
-                    token: ""
-                },
-                token: '',
                 friends: [],
-                inputFriend: {
-                    subscribe_url: "",
-                    site_logo: "",
-                },
-                inputTitle: "添加朋友",
-                inputIsChange: false,
-                server_url: "http://127.0.0.1"
+                // 输入框
+                inputTitle: "新增朋友",
+                // 选中的朋友
+                selectFriend: {},
+                // 服务端信息
+                server_url: "",
+                server_token: ""
             },
             methods: {
                 showMsg(msg){
                     alert(msg)
                 },
                 checkToken: function (){
-                  if(this.token===""){
-                      this.showMsg("请先输入管理Token")
+                  if(this.server_token===""||this.server_url===""){
+                      this.showMsg("请先输入管理端信息")
                       return false
                   }
                   return true
@@ -99,17 +107,17 @@
                 onSaveFriend: function (){
                     if (!this.checkToken()){return}
                     let self = this
-                    const response = fetch(this.server_url+"/friends?token="+this.token, {
+                    const response = fetch(this.server_url+"/friends?token="+this.server_token, {
                         method: 'post',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify(this.inputFriend)
+                        body: JSON.stringify(this.selectFriend)
                     })
                     response.then(res => res.json())
                         .then(json=>{
                             if(json.message==="success"){
-                                if(this.inputFriend.ID){
+                                if(this.selectFriend .ID){
                                     self.showMsg("更新成功")
                                 }else{
                                     self.showMsg("添加成功")
@@ -120,15 +128,20 @@
                 },
                 onUpdateFriend: function(index){
                     if (!this.checkToken()){return}
-                    this.inputFriend = this.friends[index]
-                    this.inputTitle = "修改朋友信息"
-                    this.inputIsChange = true
+                    this.selectFriend = this.friends[index]
+                    this.inputTitle = "修改朋友"
                 },
                 onDeleteFriend: function (index){
                     if (!this.checkToken()){return}
+                    let x;
+                    let r=confirm("确认删除朋友，同时他的日志也会被清理哦！");
+                    if (r==false){
+                        return;
+                    }
+
                     let friend = this.friends[index]
                     let self = this
-                    const response = fetch(this.server_url+`/friends?token=${this.token}&id=${friend.id}`, { method: "DELETE" })
+                    const response = fetch(this.server_url+`/friends?token=${this.server_token}&id=${friend.id}`, { method: "DELETE" })
                     response.then(res => res.json())
                         .then(json =>{
                             if(json.message==="success"){
@@ -173,25 +186,26 @@
                         }
                     }
                     return tRequest;
+                },
+
+                // 缓存服务端信息到本地
+                onCatchServerInfo: function (){
+                    localStorage.setItem("server_url", this.server_url);
+                    localStorage.setItem("server_token", this.server_token);
+                    this.showMsg("缓存成功")
+                },
+                onAddFriendClick: function (){
+                    this.selectFriend = {}
+                    this.inputTitle = "添加朋友"
                 }
 
             },
             mounted: function (){
-                this.urlRequest = this.getUrlRequest()
-                if(typeof(this.urlRequest.token) == "undefined" || this.urlRequest.token==""){
-                    // 使用系统默认的输入框采集token
-                    let token = prompt("请输入服务端的管理Token", "");
-                    if (token)//如果返回的有内容
-                    {
-                        let uri = window.location.href
-                        let newUri = this.updateQueryStringParameter(uri, "token", token)
-                        window.location.href = newUri
-                    }else{
-                        alert("没输入token，将无法管理朋友哦")
-                    }
+                this.server_url = localStorage.getItem("server_url")
+                this.server_token = localStorage.getItem("server_token")
+                if (this.server_url){
+                    this.fetchFriends()
                 }
-                this.token = this.urlRequest.token
-                this.fetchFriends()
             }
         })
     </script>
@@ -207,3 +221,5 @@
 
 </body>
 </html>
+
+@hourly
