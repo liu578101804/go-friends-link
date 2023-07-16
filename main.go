@@ -62,7 +62,7 @@ func startCron() {
 		return
 	}
 	log.Println("调度表达式为：", cronStr)
-	Cron = cron.New()
+	Cron = cron.New(cron.WithSeconds()) //支持到秒级别的定时
 	var entryId cron.EntryID
 	entryId, _ = Cron.AddFunc(cronStr, func() {
 		// 定时任务执行开始标识
@@ -109,6 +109,7 @@ func main() {
 	database.Init()
 	// 启动定时任务
 	startCron()
+	defer Cron.Stop()
 	// 引擎
 	r := gin.Default()
 	// 注册中间件
