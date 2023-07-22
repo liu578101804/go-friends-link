@@ -94,11 +94,28 @@
     #k-state,.k-article-time{display:none;}
 }
 
+.k-top-flex{
+    margin: 0 auto;
+    max-width: 900px;
+}
+
+
 .k-random-article{
     text-align: center;
     cursor: pointer;
     margin-top: 10px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
 }
 .k-random-article:hover{
     color: #fe5186;
+}
+
+.k-send {
+    background-image: url(http://127.0.0.1/ui/statics/imgs/random.gif);
+    width: 300px;
+    height: 80px;
+    border-radius: 8px;
 }

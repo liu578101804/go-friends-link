@@ -51,6 +51,8 @@ function loadArticleItem(datalist){
 // 输出基本结构
 function loadStatistical(sdata){
     let messageBoard =`
+<div class="k-top-flex">
+
   <div id="k-state" class="k-new-add">
     <div class="k-state-data">
       <div class="k-data-friends">
@@ -59,11 +61,11 @@ function loadStatistical(sdata){
       </div>
       <div class="k-data-article">
         <span class="k-label">活跃</span>
-        <span class="k-message">${sdata.error_num}</span>
+        <span class="k-message">${sdata.active_num}</span>
       </div>
       <div class="k-data-article">
         <span class="k-label">异常</span>
-        <span class="k-message">${sdata.active_num}</span>
+        <span class="k-message">${sdata.error_num}</span>
       </div>
       <div class="k-data-article">
         <span class="k-label">日志</span>
@@ -71,14 +73,15 @@ function loadStatistical(sdata){
       </div>
     </div>
     <div id="k-change">
-        <span>更新于：${sdata.last_updated_time}</span>
+        <span>更新于：${sdata.last_updated_time} | 仓库地址：${k_data.api_url}</span>
     </div>
   </div>
-  <div class="k-random-article">
-    <div class="k-send" onclick="onRandomClick()">
-      随机一篇
-     </div>
-  </div>
+  
+ <div class="k-random-article">
+    <div class="k-send" onclick="onRandomClick()"></div>
+</div>
+
+ </div>
   `;
     let loadMoreBtn = `
     <div id="k-more" class="k-new-add" onclick="loadNextArticle()">加载更多</div>
