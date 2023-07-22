@@ -35,46 +35,60 @@ func Crawling() {
 		}
 
 		// 这个朋友的最后的更新时间
-		if friend.LastUpdateTime == nil || friend.LastUpdateTime.IsZero() {
+		if friend.LastPubTime == nil || friend.LastPubTime.IsZero() {
 			nowTime := time.Now().Add(-time.Hour * 7200) //往前推300天
-			friend.LastUpdateTime = &nowTime
+			friend.LastPubTime = &nowTime
 			log.Println("此站点最后更新时间为空，给他默认的时间：", nowTime)
 		}
 		// 缓存站点的最后更新时间
-		siteLastUpdateTime := friend.LastUpdateTime
-		log.Println("此站点最后更新时间为：", siteLastUpdateTime)
+		siteLastPubTime := friend.LastPubTime
+		log.Println("此站点最后更新时间为：", siteLastPubTime)
 
 		// 使用三方库解析
 		fp := gofeed.NewParser()
 		feed, err := fp.ParseURL(friend.SubscribeUrl)
 		if err != nil {
 			log.Println("获取订阅异常：", err)
+			// 写入最新的更新时间
+			if err = database.D.Model(&friend).
+				Update("last_pub_time", friend.LastPubTime).
+				Update("subscribe_error", err.Error()).Error; err != nil {
+				log.Println("更新朋友最后更新时间异常:", err)
+			}
+			continue //跳出这次获取
 		}
-		log.Println(friend.SubscribeUrl, "获取完成")
-		for _, item := range feed.Items {
-			if siteLastUpdateTime.Unix() < item.PublishedParsed.Unix() {
-				// 存入数据
-				article := database.NewArticles()
-				article.Link = item.Link
-				article.PushTime = item.PublishedParsed
-				article.UpdateTime = item.UpdatedParsed
-				article.Title = item.Title
-				article.Summary = item.Description
-				article.FriendId = friend.ID
-				database.D.Save(article)
-				// 更新最新文章时间
-				if article.PushTime.Unix() > friend.LastUpdateTime.Unix() {
-					friend.LastUpdateTime = article.PushTime
+		log.Println(friend.SubscribeUrl, "获取完成，数据量：", len(feed.Items))
+		if len(feed.Items) > 1 {
+			for _, item := range feed.Items {
+				if siteLastPubTime.Unix() < item.PublishedParsed.Unix() {
+					// 存入数据
+					article := database.NewArticles()
+					article.Link = item.Link
+					article.PushTime = item.PublishedParsed
+					article.UpdateTime = item.UpdatedParsed
+					article.Title = item.Title
+					article.Summary = item.Description
+					article.FriendId = friend.ID
+					database.D.Save(article)
+					// 更新最新文章时间
+					if article.PushTime.Unix() > friend.LastPubTime.Unix() {
+						friend.LastPubTime = article.PushTime
+					}
 				}
 			}
+		} else {
+			log.Println("本次获取数量异常")
 		}
 
 		// 写入最新的更新时间
-		if err = database.D.Model(&friend).Update("last_update_time", friend.LastUpdateTime).Error; err != nil {
+		if err = database.D.Model(&friend).
+			Update("last_pub_time", friend.LastPubTime).
+			Update("feed_type", feed.FeedType).
+			Update("subscribe_error", "").Error; err != nil {
 			log.Println("更新朋友最后更新时间异常:", err)
 		}
 	}
-	
+
 	// 更新下最后更新时间
 	config.UpdateCrawlingTime()
 }

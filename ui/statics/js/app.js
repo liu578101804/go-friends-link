@@ -59,6 +59,10 @@ function loadStatistical(sdata){
       </div>
       <div class="k-data-article">
         <span class="k-label">活跃</span>
+        <span class="k-message">${sdata.error_num}</span>
+      </div>
+      <div class="k-data-article">
+        <span class="k-label">异常</span>
         <span class="k-message">${sdata.active_num}</span>
       </div>
       <div class="k-data-article">
@@ -69,6 +73,11 @@ function loadStatistical(sdata){
     <div id="k-change">
         <span>更新于：${sdata.last_updated_time}</span>
     </div>
+  </div>
+  <div class="k-random-article">
+    <div class="k-send" onclick="onRandomClick()">
+      随机一篇
+     </div>
   </div>
   `;
     let loadMoreBtn = `
@@ -111,6 +120,19 @@ function fetchArticle(call_back){
             // 判断是否最后一页
             if(articleData.length<10){
                 document.getElementById('k-more').outerHTML = `<div id="k-more" class="k-new-add"><small>没有更多了！</small></div>`
+            }
+        })
+}
+
+// 随机一篇文章
+function onRandomClick(){
+    let fetchUrl = k_data.api_url+"/articles/random";
+    fetch(fetchUrl)
+        .then(res => res.json())
+        .then(json =>{
+            if (json.code===200){
+                let url = json.data.link
+                window.open(url)
             }
         })
 }

@@ -13,12 +13,12 @@ type Model struct {
 
 type Articles struct {
 	Model
-	Title      string
-	Link       string
-	Summary    string
-	UpdateTime *time.Time
-	PushTime   *time.Time
-	FriendId   int
+	Title      string     `json:"title"`
+	Link       string     `json:"link"`
+	Summary    string     `json:"summary"`
+	UpdateTime *time.Time `json:"update_time"`
+	PushTime   *time.Time `json:"push_time"`
+	FriendId   int        `json:"friend_id"`
 }
 
 func NewArticles() *Articles {
@@ -36,9 +36,11 @@ type Friends struct {
 	SiteDescribe string `json:"site_describe"`
 	SiteLogo     string `json:"site_logo"`
 
-	SubscribeUrl string `json:"subscribe_url"`
+	SubscribeUrl   string `json:"subscribe_url"`
+	FeedType       string `json:"feed_type"`
+	SubscribeError string `json:"subscribe_error"`
 
-	LastUpdateTime *time.Time `json:"last_update_time"`
+	LastPubTime *time.Time `json:"last_pub_time"`
 }
 
 func NewFriends() *Friends {

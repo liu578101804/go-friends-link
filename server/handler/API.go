@@ -9,6 +9,7 @@ import (
 	"github.com/mmcdole/gofeed"
 	"gorm.io/gorm"
 	"log"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -51,7 +52,7 @@ func SaveFriendFunc(c *gin.Context) {
 		friend.SiteDescribe = feed.Description
 		friend.SiteUrl = feed.Link
 		friend.SiteLogo = strings.TrimSpace(requestM.SiteLogo)
-		friend.LastUpdateTime = &lastUpdateTime
+		friend.LastPubTime = &lastUpdateTime
 		err = database.D.Save(friend).Error
 	} else { // 已经存在
 		log.Println("更新友链")
@@ -60,7 +61,7 @@ func SaveFriendFunc(c *gin.Context) {
 		friend.SiteDescribe = feed.Description
 		friend.SiteUrl = feed.Link
 		friend.SiteLogo = strings.TrimSpace(requestM.SiteLogo)
-		friend.LastUpdateTime = &lastUpdateTime
+		friend.LastPubTime = &lastUpdateTime
 		err = database.D.Updates(friend).Error
 	}
 	if err != nil {
@@ -166,11 +167,21 @@ func GetAllArticlesFunc(c *gin.Context) {
 		RsError(errors.New("获取异常"), c)
 		return
 	}
-	// 获取活跃用户数量 前3个月
+	// 获取活跃用户数量 前9个月
 	var activeFriendCount64 int64
 	if err := database.D.Model(database.NewFriends()).
-		Where("last_update_time between datetime('NOW','-3 MONTH','START OF MONTH') and datetime('NOW','START OF DAY')").
+		Where("last_pub_time between datetime('NOW','-9 MONTH','START OF MONTH') and datetime('NOW','START OF DAY')").
 		Count(&activeFriendCount64).Error; err != nil {
+		log.Println("获取异常：", err.Error())
+		RsError(errors.New("获取异常"), c)
+		return
+	}
+
+	// 获取异常订阅数量
+	var subErrorCount64 int64
+	if err := database.D.Model(database.NewFriends()).
+		Where("subscribe_error != ''").
+		Count(&subErrorCount64).Error; err != nil {
 		log.Println("获取异常：", err.Error())
 		RsError(errors.New("获取异常"), c)
 		return
@@ -188,7 +199,7 @@ func GetAllArticlesFunc(c *gin.Context) {
 		StatisticalData: &modules.ResponseStatisticalDataModule{
 			FriendsNum:      len(friends),
 			ActiveNum:       int(activeFriendCount64),
-			ErrorNum:        0,
+			ErrorNum:        int(subErrorCount64),
 			ArticleNum:      int(articleCount64),
 			LastUpdatedTime: config.ConfigInstance.LastCrawlingTime,
 		},
@@ -220,6 +231,30 @@ func RsError(err error, c *gin.Context) {
 	})
 }
 
+// RandomArticlesFunc 随机一篇文章
+func RandomArticlesFunc(c *gin.Context) {
+	// 文章数量
+	var articleCount64 int64
+	if err := database.D.Model(database.NewArticles()).Count(&articleCount64).Error; err != nil {
+		log.Println("获取异常：", err.Error())
+		RsError(errors.New("获取异常"), c)
+		return
+	}
+	articleM := database.NewArticles()
+	rand.Seed(time.Now().UnixNano())
+	// 随机一个ID
+	if err := database.D.Offset(int(rand.Int63n(articleCount64))).Find(articleM).Error; err != nil {
+		log.Println("获取异常：", err.Error())
+		RsError(errors.New("获取异常"), c)
+		return
+	}
+	c.JSON(200, gin.H{
+		"code": 200,
+		"msg":  "success",
+		"data": articleM,
+	})
+}
+
 func RegisterAPI(r *gin.Engine) {
 	// 禁止访问配置文件
 	r.GET("/config.json", DontGetConfigFunc)
@@ -227,6 +262,8 @@ func RegisterAPI(r *gin.Engine) {
 	r.GET("/articles", GetAllArticlesFunc)
 	// 获取全部朋友
 	r.GET("/friends", GetAllFriends)
+	// 随机一篇
+	r.GET("/articles/random", RandomArticlesFunc)
 	// 删除友链
 	r.DELETE("/friends", DelFriendFunc)
 	// 添加友链
