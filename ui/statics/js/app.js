@@ -34,7 +34,7 @@ function loadArticleItem(datalist){
         <a class="k-article-title" href="${item.link}" target="_blank" rel="noopener nofollow" data-title="${item.title}">${item.title}</a>
         <span class="k-article-floor">${articleIndex}</span>
         <div class="k-article-avatar no-lightbox flink-item-icon">
-          <img class="k-img-avatar avatar" src="${item.avatar}" alt="avatar" onerror="this.src='${k_data.error_img}'; this.onerror = null;">
+          <!--/*<img class="k-img-avatar avatar" src="${item.avatar}" alt="avatar" onerror="this.src='${k_data.error_img}'; this.onerror = null;">*/-->
           <a onclick="openMeShow(event)" data-link="${item.link}" class="" target="_blank" rel="noopener nofollow" href="javascript:;"><span class="k-article-author">${item.author}</span></a>
           <span class="k-article-time">
             <span class="k-time-created"><i class="far fa-calendar-alt">发布于</i>${item.created}</span>
