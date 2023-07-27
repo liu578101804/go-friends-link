@@ -20,8 +20,9 @@ func (*ArticleUniFriendM) TableName() string {
 func GetAllArticlesUniFriend(start, count int) ([]*ArticleUniFriendM, error) {
 	articles := make([]*ArticleUniFriendM, 0)
 	db := D.
-		Select("friends.site_title,friends.site_logo,articles.*").
-		Joins("left join friends on articles.friend_id = friends.id")
+		Select("friends.site_title,friends.site_logo,friends.subscribe_error,articles.*").
+		Joins("left join friends on articles.friend_id = friends.id").
+		Order("articles.push_time DESC")
 	if start != -1 {
 		if count > 10 || count < 1 {
 			count = 10

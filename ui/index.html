@@ -21,6 +21,7 @@
                         <th scope="col">网站地址</th>
                         <th scope="col">订阅地址</th>
                         <th scope="col">最后更新时间</th>
+                        <th scope="col">异常信息</th>
                         <th scope="col">操作</th>
                     </tr>
                     </thead>
@@ -30,7 +31,8 @@
                         <td>{{item.site_title}}</td>
                         <td>{{item.site_url}}</td>
                         <td>{{item.subscribe_url}}</td>
-                        <td>{{item.last_pub_time}}</td>
+                        <td>{{item.last_pub_time|time_format}}</td>
+                        <td>{{item.subscribe_error}}</td>
                         <td>
                             <button type="button" class="btn btn-primary" v-on:click="onUpdateFriend(index)" >修改</button>
                             <button type="button" class="btn btn-danger"  v-on:click="onDeleteFriend(index)" >删除</button>
@@ -76,8 +78,10 @@
     </div>
 
 
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
 
+    <script src="https://moment.nodejs.cn/downloads/moment-with-locales.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     <script>
         let app = new Vue({
@@ -91,6 +95,11 @@
                 // 服务端信息
                 server_url: "",
                 server_token: ""
+            },
+            filters:{
+                time_format: function (val){
+                    return moment(val).format("YYYY-MM-DD hh:mm:ss");
+                }
             },
             methods: {
                 showMsg(msg){
@@ -193,6 +202,8 @@
                     localStorage.setItem("server_url", this.server_url);
                     localStorage.setItem("server_token", this.server_token);
                     this.showMsg("缓存成功")
+                    // 拉取朋友
+                    this.fetchFriends()
                 },
                 onAddFriendClick: function (){
                     this.selectFriend = {}
