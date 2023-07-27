@@ -49,4 +49,4 @@ jobs:
         run: docker build --file Dockerfile -t registry.cn-shanghai.aliyuncs.com/liu578101804/go-friends-link:${GITHUB_REF/refs\/tags\//} .
 
       - name: Docker image push to ali
-        run: docker push ${{ secrets.ALI_DOCKER_HUB_REGISTRY }}/${{ secrets.ALI_NAMESPACE }}/go-friends-link:${GITHUB_REF/refs\/tags\//}
+        run: docker push registry.cn-shanghai.aliyuncs.com/liu578101804/go-friends-link:${GITHUB_REF/refs\/tags\//}
