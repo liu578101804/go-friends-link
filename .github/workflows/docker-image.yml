@@ -31,7 +31,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Build the Docker image
+      - name: Build the Docker image for hub
         run: docker build --file Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/go-friends-link:${GITHUB_REF/refs\/tags\//} .
 
       - name: Docker image push
@@ -45,8 +45,8 @@ jobs:
           username: ${{ secrets.ALI_DOCKERHUB_USERNAME }}
           password: ${{ secrets.ALI_DOCKERHUB_PASSWORD }}
 
-      - name: Tag Docker image for ali
-        run: docker build --file Dockerfile -t ${{ secrets.ALI_DOCKER_HUB_REGISTRY }}/${{ secrets.ALI_NAMESPACE }}/go-friends-link:${GITHUB_REF/refs\/tags\//}
+      - name: Build the Docker image for ali
+        run: docker build --file Dockerfile -t ${{ secrets.ALI_DOCKER_HUB_REGISTRY }}/${{ secrets.ALI_NAMESPACE }}/go-friends-link:${GITHUB_REF/refs\/tags\//} .
 
       - name: Docker image push to ali
         run: docker push ${{ secrets.ALI_DOCKER_HUB_REGISTRY }}/${{ secrets.ALI_NAMESPACE }}/go-friends-link:${GITHUB_REF/refs\/tags\//}
